@@ -20,7 +20,7 @@
 #    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 #    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 #    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
+from collections import Iterable
 from django.conf import settings
 from rest_framework.fields import empty, Field
 from rest_framework.serializers import Serializer
@@ -95,6 +95,8 @@ class ApiResponseDto(BaseDto):
         serialized_payload = self.payload
         if isinstance(self.payload, BaseDto):
             serialized_payload = self.payload.to_representation(self.payload)
+        if isinstance(self.payload, Iterable):
+            serialized_payload = list([p.to_representation(p) for p in self.payload])
         return {
             "payload": serialized_payload,
             "service": self.service.to_dict()
