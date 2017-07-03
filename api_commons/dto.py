@@ -96,7 +96,7 @@ class ApiResponseDto(BaseDto):
         if isinstance(self.payload, BaseDto):
             serialized_payload = self.payload.to_representation(self.payload)
         if isinstance(self.payload, Iterable):
-            serialized_payload = list([p.to_representation(p) for p in self.payload])
+            serialized_payload = list([(p.to_representation(p) if isinstance(p, BaseDto) else p) for p in self.payload])
         return {
             "payload": serialized_payload,
             "service": self.service.to_dict()
