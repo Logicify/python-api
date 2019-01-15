@@ -27,20 +27,21 @@ do
     command="$1"
     case $command in
         clean)
-        echo "Cleaning build output dirs"
-        rm -rf build/*
-        rm -rf dist/*
-        rm -rf *.egg-info
-        ;;
+            echo "Cleaning build output dirs"
+            rm -rf ./build/*
+            rm -rf ./dist/*
+            rm -rf ./*.egg-info
+            ;;
         build)
-        echo "Building wheel package"
-        python setup.py bdist_wheel
-        echo "Building source distribution"
-        python setup.py sdist
-        ;;
+            echo "Building wheel package"
+            python setup.py bdist_wheel
+            echo "Building source distribution"
+            python setup.py sdist
+            ;;
         publish)
-        echo "Uploading packages on PyPi"
-        twine upload dist/*
+            echo "Uploading packages on PyPi"
+            twine upload dist/*
+            ;;
     esac
     shift
 done
