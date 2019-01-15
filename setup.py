@@ -55,9 +55,9 @@ setup(
     packages=find_packages(include=['api_commons']),
 
     install_requires=[
-        'Django==1.11.2',
-        'djangorestframework==3.5.4',
-        'typing==3.5.3.0'
+        'Django>=1.11',
+        'djangorestframework>=3.5.4',
+        'typing>=3.5.3.0'
     ],
 
     # Extra dependencies might be installed with:
