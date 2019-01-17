@@ -21,23 +21,24 @@
 #    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 #    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import collections
 import logging
 import sys
 from json import JSONEncoder
+from typing import Union
 from uuid import UUID
 
-import collections
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpRequest
 from django.http import HttpResponse
 from rest_framework import status as HttpStatus
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from rest_framework.exceptions import NotAuthenticated, AuthenticationFailed
+from rest_framework.exceptions import NotAuthenticated, AuthenticationFailed, MethodNotAllowed
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
+from rest_framework.status import is_client_error, HTTP_400_BAD_REQUEST
 from rest_framework.views import APIView
-from typing import Union
 
 from .dto import BaseDto, ApiResponseDto
 from .error import InvalidPaginationOptionsError, InvalidInputDataError, ErrorCode
@@ -80,9 +81,7 @@ class ApiResponse(Response):
 
     @classmethod
     def not_found(cls, dto_or_error_message: DtoOrMessageOrErrorCode, error_code=None):
-        response = ApiResponse(None, status=HttpStatus.HTTP_404_NOT_FOUND, secret=cls.__SECRET)
-        cls.__update_response_for_error(response, dto_or_error_message, error_code, "Entity not found")
-        return response
+        return cls.client_error(HttpStatus.HTTP_404_NOT_FOUND, dto_or_error_message, error_code, "Entity not found")
 
     @classmethod
     def success(cls, payload: [BaseDto, None] = None, status: int = HttpStatus.HTTP_200_OK):
@@ -100,9 +99,24 @@ class ApiResponse(Response):
 
     @classmethod
     def bad_request(cls, dto_or_error_message: Union[BaseDto, str], error_code: int = None):
-        response = ApiResponse(None, status=HttpStatus.HTTP_400_BAD_REQUEST, secret=cls.__SECRET)
-        cls.__update_response_for_error(response, dto_or_error_message, error_code,
-                                        "Bad request. Check service.validation_errors for details")
+        return cls.client_error(
+            HTTP_400_BAD_REQUEST,
+            dto_or_error_message,
+            error_code,
+            "Bad request. Check service.validation_errors for details"
+        )
+
+    @classmethod
+    def client_error(cls, status_code: int, dto_or_error_message: DtoOrMessageOrErrorCode = None,
+                     error_code: int = None, default_message: str = None):
+        assert is_client_error(status_code)
+        response = ApiResponse(None, status=status_code, secret=cls.__SECRET)
+        cls.__update_response_for_error(
+            response,
+            dto_or_error_message=dto_or_error_message,
+            error_code=error_code,
+            default_message=default_message
+        )
         return response
 
     @classmethod
@@ -194,10 +208,10 @@ def exception_handler(exc: Exception, context):
         return ApiResponse.not_found(exc)
     if isinstance(exc, InvalidInputDataError):
         return ApiResponse.bad_request(str(exc))
-    else:
-        logger.exception(str(exc))
-        return ApiResponse.internal_server_error(exc)
-    raise exc
+    if isinstance(exc, MethodNotAllowed):
+        return ApiResponse.client_error(HttpStatus.HTTP_405_METHOD_NOT_ALLOWED, ErrorCode(None, 'Method Not Allowed'))
+    logger.exception(str(exc))
+    return ApiResponse.internal_server_error(exc)
 
 
 def __set_response_attributes(response: HttpResponse):
