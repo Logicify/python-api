@@ -40,7 +40,7 @@ do
             ;;
         publish)
             echo "Uploading packages on PyPi"
-            twine upload dist/*
+            twine upload -u logicify dist/*
             ;;
     esac
     shift
