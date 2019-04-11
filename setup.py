@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
-version = "1.0.3"
+version = "1.0.4"
 root_dir = path.abspath(path.dirname(__file__))
 src_dir = root_dir
 # Get the long description from the README file
