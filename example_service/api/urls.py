@@ -5,6 +5,7 @@ import api_commons.common
 urlpatterns = [
     url(r'^ping/?', include('api.ping.urls')),
     url(r'^calc/?', include('api.calculator.urls')),
+    url(r'^hierarchy/?', include('api.hierarchy.urls')),
 ]
 
 handler404 = api_commons.common.error_404_handler

@@ -7,12 +7,13 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
-version = "1.0.4"
+version = "1.0.5"
 root_dir = path.abspath(path.dirname(__file__))
 src_dir = root_dir
 # Get the long description from the README file
-with open(path.join(root_dir, 'README.rst'), encoding='utf-8') as f:
-    long_description = f.read()
+with open(path.join(root_dir, 'README.MD'), encoding='utf-8') as f:
+    # long_description = f.read()
+    long_description = '''Common library for building django based web api applications'''
 
 setup(
     name='django_api_commons',
@@ -21,6 +22,7 @@ setup(
     version=version,
     description='Common library for building django based web api applications',
     long_description=long_description,
+    long_description_content_type="text/markdown",
     url='https://github.com/Logicify/python-api',
     keywords='django webservices api rest djangorestframework json jsonapi',
 

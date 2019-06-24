@@ -23,6 +23,7 @@
 
 from collections import Iterable
 from django.conf import settings
+from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty, Field
 from rest_framework.serializers import Serializer
 
@@ -112,12 +113,21 @@ class RelatedDtoField(Field):
         self.dto_class = dto_class
 
     def to_representation(self, instance: BaseDto):
-        return instance.to_dict()
+        if isinstance(instance, BaseDto):
+            return instance.to_dict()
+        elif isinstance(instance, dict):
+            return instance
+        else:
+            raise ValueError("Unexpected value passed to to_representation method. " + str(instance))
 
     def to_internal_value(self, data: dict):
         dto = self.dto_class.from_dict(data)
         dto.is_valid()
         return dto
+
+    def run_validators(self, value):
+        if not value.is_valid():
+            raise ValidationError(value.errors)
 
 
 class PaginationOptions(object):
