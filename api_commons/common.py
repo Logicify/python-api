@@ -24,11 +24,10 @@
 import collections
 import logging
 import sys
-from json import JSONEncoder
 from typing import Union
-from uuid import UUID
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpRequest
 from django.http import HttpResponse
 from rest_framework import status as HttpStatus
@@ -146,12 +145,10 @@ class ApiResponse(Response):
         )
 
 
-class JsonEncoder(JSONEncoder):
+class JsonEncoder(DjangoJSONEncoder):
     def default(self, o):
         if isinstance(o, BaseDto):
             return o.to_dict()
-        if isinstance(o, UUID):
-            return str(o)
         return super().default(o)
 
 
