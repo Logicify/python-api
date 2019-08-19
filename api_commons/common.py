@@ -37,7 +37,7 @@ from rest_framework.exceptions import NotAuthenticated, AuthenticationFailed, Me
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
-from rest_framework.status import is_client_error, HTTP_400_BAD_REQUEST
+from rest_framework.status import is_client_error, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from rest_framework.views import APIView
 
 from .dto import BaseDto, ApiResponseDto
@@ -95,6 +95,7 @@ class ApiResponse(Response):
         else:
             message = "Unauthorized"
         response.data.service.error_message = message
+        response.data.service.error_code = HTTP_401_UNAUTHORIZED  # service error code shouldn't be zero value
         return response
 
     @classmethod
