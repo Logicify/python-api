@@ -24,22 +24,23 @@
 import collections
 import logging
 import sys
-from json import JSONEncoder
 from typing import Union
-from uuid import UUID
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpRequest
 from django.http import HttpResponse
 from rest_framework import status as HttpStatus
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from rest_framework.exceptions import NotAuthenticated, AuthenticationFailed, MethodNotAllowed
+from rest_framework.exceptions import NotAuthenticated, AuthenticationFailed, MethodNotAllowed, UnsupportedMediaType, \
+    ParseError
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
-from rest_framework.status import is_client_error, HTTP_400_BAD_REQUEST
+from rest_framework.status import is_client_error, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED, \
+    HTTP_405_METHOD_NOT_ALLOWED, HTTP_403_FORBIDDEN
 from rest_framework.views import APIView
-
+from django.utils.translation import ugettext_lazy as _
 from .dto import BaseDto, ApiResponseDto
 from .error import InvalidPaginationOptionsError, InvalidInputDataError, ErrorCode
 
@@ -95,6 +96,7 @@ class ApiResponse(Response):
         else:
             message = "Unauthorized"
         response.data.service.error_message = message
+        response.data.service.error_code = HTTP_401_UNAUTHORIZED  # service error code shouldn't be zero value
         return response
 
     @classmethod
@@ -125,13 +127,28 @@ class ApiResponse(Response):
         response.data.service.error_code = HttpStatus.HTTP_500_INTERNAL_SERVER_ERROR
         return response
 
+    @classmethod
+    def not_allowed(cls):
+        return cls.client_error(
+            HTTP_405_METHOD_NOT_ALLOWED,
+            "HTTP Method Not allowed.",
+            HTTP_405_METHOD_NOT_ALLOWED,
+            None
+        )
 
-class JsonEncoder(JSONEncoder):
+    @classmethod
+    def forbidden(cls):
+        return cls.client_error(
+            HTTP_403_FORBIDDEN,
+            "Forbidden",
+            HTTP_403_FORBIDDEN
+        )
+
+
+class JsonEncoder(DjangoJSONEncoder):
     def default(self, o):
         if isinstance(o, BaseDto):
             return o.to_dict()
-        if isinstance(o, UUID):
-            return str(o)
         return super().default(o)
 
 
@@ -205,13 +222,18 @@ def exception_handler(exc: Exception, context):
     if isinstance(exc, (NotAuthenticated, AuthenticationFailed)):
         return ApiResponse.not_authenticated()
     if isinstance(exc, ObjectDoesNotExist):
-        return ApiResponse.not_found(exc)
+        return ApiResponse.not_found(str(exc))
     if isinstance(exc, InvalidInputDataError):
         return ApiResponse.bad_request(str(exc))
-    if isinstance(exc, MethodNotAllowed):
-        return ApiResponse.client_error(HttpStatus.HTTP_405_METHOD_NOT_ALLOWED, ErrorCode(None, 'Method Not Allowed'))
-    logger.exception(str(exc))
-    return ApiResponse.internal_server_error(exc)
+    elif isinstance(exc, MethodNotAllowed):
+        return ApiResponse.not_allowed()
+    elif isinstance(exc, UnsupportedMediaType):
+        return ApiResponse.bad_request(str(exc))
+    elif isinstance(exc, ParseError):
+        return ApiResponse.bad_request(_("Json is invalid."))
+    else:
+        logger.exception(str(exc))
+        return ApiResponse.internal_server_error(exc)
 
 
 def __set_response_attributes(response: HttpResponse):

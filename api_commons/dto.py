@@ -106,10 +106,11 @@ class ApiResponseDto(BaseDto):
 
 
 class RelatedDtoField(Field):
-    def __init__(self, dto_class, required: bool = None, default=empty, initial=empty) -> None:
+    def __init__(self, dto_class, required: bool = None, allow_null=False, default=empty, initial=empty) -> None:
         super().__init__(read_only=False, write_only=False, source=None, required=required, default=default,
                          initial=initial,
-                         label=None, help_text=None, style=None, error_messages=None, validators=None, allow_null=False)
+                         label=None, help_text=None, style=None, error_messages=None, validators=None,
+                         allow_null=allow_null)
         self.dto_class = dto_class
 
     def to_representation(self, instance: BaseDto):
